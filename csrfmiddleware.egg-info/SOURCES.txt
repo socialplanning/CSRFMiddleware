@@ -1,0 +1,7 @@
+setup.py
+csrfmiddleware/__init__.py
+csrfmiddleware.egg-info/PKG-INFO
+csrfmiddleware.egg-info/SOURCES.txt
+csrfmiddleware.egg-info/dependency_links.txt
+csrfmiddleware.egg-info/requires.txt
+csrfmiddleware.egg-info/top_level.txt
