@@ -26,11 +26,19 @@ class CsrfMiddleware(Filter):
       
     """
 
+    def __init__(self, app, config):
+        Filter.__init__(self, app)
+        self.config = config
+
     def __call__(self, environ, start_response):
         request = WSGIRequest(environ)
         session = environ['beaker.session']
         session.save() 
+
         if request.method == 'POST':
+            if 'csrf.unprotected_path' in self.config:
+                if request.path_info.startswith(self.config['csrf.unprotected_path']):
+                    return Filter.__call__(self, environ, start_response)
             try:
                 session_id = session.id
             except KeyError:

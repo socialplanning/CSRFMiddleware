@@ -1,3 +1,4 @@
+COPYING
 setup.py
 csrfmiddleware/__init__.py
 csrfmiddleware.egg-info/PKG-INFO
