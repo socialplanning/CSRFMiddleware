@@ -61,10 +61,10 @@ class CsrfMiddleware(Filter):
 
     def filter(self, environ, headers, data):
         session = environ['beaker.session']
-        headers = dict(headers)
+        headers_dict = dict(headers)
         csrf_token = session.id
         if csrf_token is not None and \
-                headers['content-type'].split(';')[0] in _HTML_TYPES:
+                headers_dict['content-type'].split(';')[0] in _HTML_TYPES:
             
             # ensure we don't add the 'id' attribute twice (HTML validity)
             idattributes = itertools.chain(("id='csrfmiddlewaretoken'",), 
@@ -76,6 +76,11 @@ class CsrfMiddleware(Filter):
                 " name='csrfmiddlewaretoken' value='" + csrf_token + \
                 "' /></div>"
 
-            # Modify any POST forms
+            # Modify any POST forms and fix content-length
             data = _POST_FORM_RE.sub(add_csrf_field, data)
+            for i, (header, value) in enumerate(headers):
+                if header.lower() == 'content-length':
+                    del headers[i]
+            headers.append(('Content-Length', str(len(data))))
+            
         return data
