@@ -67,14 +67,14 @@ class CsrfMiddleware(Filter):
                 headers_dict['content-type'].split(';')[0] in _HTML_TYPES:
             
             # ensure we don't add the 'id' attribute twice (HTML validity)
-            idattributes = itertools.chain(("id='csrfmiddlewaretoken'",), 
+            idattributes = itertools.chain(('id="csrfmiddlewaretoken"',), 
                                             itertools.repeat(''))
             def add_csrf_field(match):
                 """Returns the matched <form> tag plus the added <input> element"""
-                return match.group() + "<div style='display:none;'>" + \
-                "<input type='hidden' " + idattributes.next() + \
-                " name='csrfmiddlewaretoken' value='" + csrf_token + \
-                "' /></div>"
+                return match.group() + '<div style="display:none;">' + \
+                '<input type="hidden" ' + idattributes.next() + \
+                ' name="csrfmiddlewaretoken" value="' + csrf_token + \
+                '" /></div>'
 
             # Modify any POST forms and fix content-length
             data = _POST_FORM_RE.sub(add_csrf_field, data)
