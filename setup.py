@@ -7,10 +7,10 @@ except ImportError:
 
 setup(
     name='csrfmiddleware',
-    version="",
-    #description='',
-    #author='',
-    #author_email='',
+    version="1.0",
+    description="CSRF Middleware for Pylons, based on Luke Plant's django version.",
+    author='Luke Plant and David Turner',
+    author_email='novalis@openplans.org',
     #url='',
     install_requires=["Paste",
                       "WSGIFilter"
