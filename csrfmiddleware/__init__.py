@@ -61,13 +61,11 @@ class CsrfMiddleware(Filter):
 
     def filter(self, environ, headers, data):
         session = environ['beaker.session']
-        headers_dict = dict(headers)
         csrf_token = session.id
-
-        if headers_dict.has_key('content-type'):
-           content_type = headers_dict['content-type']
-        else:
-           content_type = headers_dict['Content-Type']
+        content_type = ''
+        for header, value in headers:
+            if header.lower() == 'content-type':
+                content_type = value
 
         if csrf_token is not None and \
                 content_type.split(';')[0] in _HTML_TYPES:
