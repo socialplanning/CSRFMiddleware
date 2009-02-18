@@ -14,7 +14,7 @@ setup(
     #url='',
     install_requires=["Paste",
                       "beaker",
-                      "WSGIFilter"
+                      "webob",
                       ],
     entry_points="""
     # -*- Entry points: -*-

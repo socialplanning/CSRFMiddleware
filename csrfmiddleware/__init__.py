@@ -7,68 +7,69 @@ forgeries from other sites.
 This is a Pylons port of Luke Plant's django version.
 
 """
-from paste.wsgiwrappers import WSGIRequest
-from wsgifilter import Filter
+from webob import Request
+from webob.exc import HTTPForbidden
 import re
 import itertools
 
-_ERROR_MSG = '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><body><h1>403 Forbidden</h1><p>Cross Site Request Forgery detected. Request aborted.</p></body></html>'
+_ERROR_MSG = 'Cross Site Request Forgery detected. Request aborted.'
 
 _POST_FORM_RE = \
     re.compile(r'(<form\W[^>]*\bmethod=(\'|"|)POST(\'|"|)\b[^>]*>)', re.IGNORECASE)
     
 _HTML_TYPES = ('text/html', 'application/xhtml+xml')    
 
-class CsrfMiddleware(Filter):
-    """Pylons middleware that adds protection against Cross Site
+class CsrfMiddleware(object):
+    """Middleware that adds protection against Cross Site
     Request Forgeries by adding hidden form fields to POST forms and 
-    checking requests for the correct value.  
-      
+    checking requests for the correct value. It expects beaker to be upstream
+    to insert the session into the environ 
     """
 
     def __init__(self, app, config):
-        Filter.__init__(self, app)
+        self.app = app
         self.unprotected_path = config.get('csrf.unprotected_path')
 
     def __call__(self, environ, start_response):
-        request = WSGIRequest(environ)
+        request = Request(environ)
         session = environ['beaker.session']
-        session.save() 
+        session.save()
 
         if request.method == 'POST':
-            if self.unprotected_path is not None:
-                if request.path_info.startswith(self.unprotected_path):
-                    return Filter.__call__(self, environ, start_response)
+            if (self.unprotected_path is not None
+                and request.path_info.startswith(self.unprotected_path)):
+                resp = request.get_response(self.app)
+                return resp(environ, start_response)
             try:
                 session_id = session.id
+                #XXX when would we get a KeyError if we are calling save above
             except KeyError:
                 # No session, no check required
-                return None
+                resp = request.get_response(self.app)
+                return resp(environ, start_response)
 
             csrf_token = session_id
             # check incoming token
             try:
                 request_csrf_token = request.POST['csrfmiddlewaretoken']
             except KeyError:
-                start_response("403 Forbidden", [])
-                return [_ERROR_MSG]
-            
-            if request_csrf_token != csrf_token:
-                start_response("403 Forbidden", [])
-                return [_ERROR_MSG]
-                
-        return Filter.__call__(self, environ, start_response)
+                resp = HTTPForbidden(_ERROR_MSG)
 
-    def filter(self, environ, headers, data):
+            if request_csrf_token != csrf_token:
+                resp = HTTPForbidden(_ERROR_MSG)
+            else:
+                resp = request.get_response(self.app)
+        else:
+            resp = request.get_response(self.app)
+
+        if resp.status_int != 200:
+            return resp(environ, start_response)
+
         session = environ['beaker.session']
         csrf_token = session.id
-        content_type = ''
-        for header, value in headers:
-            if header.lower() == 'content-type':
-                content_type = value
 
-        if csrf_token is not None and \
-                content_type.split(';')[0] in _HTML_TYPES:
+        if (csrf_token is not None and
+            resp.content_type.split(';')[0] in _HTML_TYPES):
             
             # ensure we don't add the 'id' attribute twice (HTML validity)
             idattributes = itertools.chain(('id="csrfmiddlewaretoken"',), 
@@ -81,13 +82,9 @@ class CsrfMiddleware(Filter):
                 '" /></div>'
 
             # Modify any POST forms and fix content-length
-            data = _POST_FORM_RE.sub(add_csrf_field, data)
-            for i, (header, value) in enumerate(headers):
-                if header.lower() == 'content-length':
-                    del headers[i]
-            headers.append(('Content-Length', str(len(data))))
-            
-        return data
+            resp.body = _POST_FORM_RE.sub(add_csrf_field, resp.body)
+
+        return resp(environ, start_response)
 
 
 def make_csrf_filter(global_conf, **kw):
