@@ -36,29 +36,23 @@ class CsrfMiddleware(object):
         session.save()
 
         if request.method == 'POST':
+            # check to see if we want to process the post at all
             if (self.unprotected_path is not None
                 and request.path_info.startswith(self.unprotected_path)):
                 resp = request.get_response(self.app)
                 return resp(environ, start_response)
-            try:
-                session_id = session.id
-                #XXX when would we get a KeyError if we are calling save above
-            except KeyError:
-                # No session, no check required
-                resp = request.get_response(self.app)
-                return resp(environ, start_response)
 
-            csrf_token = session_id
+            csrf_token = session.id
             # check incoming token
             try:
                 request_csrf_token = request.POST['csrfmiddlewaretoken']
+                if request_csrf_token != csrf_token:
+                    resp = HTTPForbidden(_ERROR_MSG)
+                else:
+                    resp = request.get_response(self.app)
             except KeyError:
                 resp = HTTPForbidden(_ERROR_MSG)
-
-            if request_csrf_token != csrf_token:
-                resp = HTTPForbidden(_ERROR_MSG)
-            else:
-                resp = request.get_response(self.app)
+        # if we're a get, we don't do any checking
         else:
             resp = request.get_response(self.app)
 
@@ -68,9 +62,7 @@ class CsrfMiddleware(object):
         session = environ['beaker.session']
         csrf_token = session.id
 
-        if (csrf_token is not None and
-            resp.content_type.split(';')[0] in _HTML_TYPES):
-            
+        if resp.content_type.split(';')[0] in _HTML_TYPES:
             # ensure we don't add the 'id' attribute twice (HTML validity)
             idattributes = itertools.chain(('id="csrfmiddlewaretoken"',), 
                                             itertools.repeat(''))
