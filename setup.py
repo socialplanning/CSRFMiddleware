@@ -13,6 +13,7 @@ setup(
     author_email='novalis@openplans.org',
     #url='',
     install_requires=["Paste",
+                      "beaker",
                       "WSGIFilter"
                       ],
     packages=find_packages(exclude=['ez_setup']),
