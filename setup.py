@@ -16,6 +16,13 @@ setup(
                       "beaker",
                       "WSGIFilter"
                       ],
+    entry_points="""
+    # -*- Entry points: -*-
+    [paste.filter_factory]
+    csrf = csrfmiddleware:make_csrf_filter
+    [paste.filter_app_factory]
+    csrf = csrfmiddleware:make_csrf_filter_app
+    """,
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',

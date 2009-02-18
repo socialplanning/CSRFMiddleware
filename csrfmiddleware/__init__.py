@@ -88,3 +88,14 @@ class CsrfMiddleware(Filter):
             headers.append(('Content-Length', str(len(data))))
             
         return data
+
+
+def make_csrf_filter(global_conf, **kw):
+    """this is suitable for the paste filter entry point"""
+    def filter(app):
+        return CsrfMiddleware(app, kw)
+    return filter
+
+def make_csrf_filter_app(app, global_conf, **kw):
+    """this is suitable for the paste filter-app entry point"""
+    return CsrfMiddleware(app, kw)
