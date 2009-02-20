@@ -7,7 +7,7 @@ except ImportError:
 
 setup(
     name='csrfmiddleware',
-    version="1.2",
+    version="1.3",
     description="CSRF Middleware for Pylons, based on Luke Plant's django version.",
     author='Luke Plant and David Turner',
     author_email='novalis@openplans.org',
